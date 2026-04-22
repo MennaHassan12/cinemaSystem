@@ -1,0 +1,93 @@
+﻿@{
+    ViewData["Title"] = "Dashboard";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="container-fluid">
+
+    <div class="row mb-4">
+
+        <div class="col-md-3">
+            <div class="card text-white bg-primary shadow">
+                <div class="card-body">
+                    <h6>Total Movies</h6>
+                    <h2>@ViewBag.TotalMovies</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white bg-success shadow">
+                <div class="card-body">
+                    <h6>Total Actors</h6>
+                    <h2>@ViewBag.TotalActors</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white bg-warning shadow">
+                <div class="card-body">
+                    <h6>Total Cinemas</h6>
+                    <h2>@ViewBag.TotalCinemas</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card text-white bg-danger shadow">
+                <div class="card-body">
+                    <h6>Total Categories</h6>
+                    <h2>@ViewBag.TotalCategories</h2>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <h4 class="mb-3">Recent Movies</h4>
+
+    <div class="row">
+        @foreach (var movie in ViewBag.RecentMovies)
+        {
+            <div class="col-md-4 mb-3">
+                <div class="card shadow">
+
+                    <img src="@movie.MainImage"
+                         class="card-img-top"
+                         style="height:180px; object-fit:cover;" />
+
+                    <div class="card-body">
+                        <h5>@movie.Name</h5>
+                        <p class="mb-1"> @movie.Category?.Name</p>
+                        <p class="mb-1"> @movie.Cinema?.Name</p>
+                        <small class="text-muted">
+                             @movie.Price.ToString("C")
+                        </small>
+                    </div>
+
+                </div>
+            </div>
+        }
+    </div>
+
+    <h4 class="mt-4 mb-3">Recent Actors</h4>
+
+    <div class="row text-center">
+        @foreach (var actor in ViewBag.RecentActors)
+        {
+            <div class="col-md-2 mb-3">
+                <div class="card shadow p-2">
+
+                    <img src="@actor.ImageUrl"
+                         class="rounded-circle mx-auto"
+                         style="width:70px;height:70px;object-fit:cover;" />
+
+                    <p class="mt-2 mb-0">@actor.Name</p>
+
+                </div>
+            </div>
+        }
+    </div>
+
+</div>

@@ -1,0 +1,41 @@
+﻿@model cinemaSystem.Models.Cinema
+
+@{
+    ViewData["Title"] = "Delete Cinema";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+
+            <div class="card-header bg-danger text-white">
+                <h4>Delete Cinema</h4>
+            </div>
+
+            <div class="card-body">
+
+                <p>Are you sure you want to delete:</p>
+
+                <h5>@Model.Name</h5>
+
+                @if (!string.IsNullOrEmpty(Model.ImageUrl))
+                {
+                    <img src="@Model.ImageUrl"
+                         style="width:120px;height:90px;object-fit:cover;border-radius:8px;" />
+                }
+
+                <form asp-area="Admin" asp-action="DeleteConfirmed" method="post" class="mt-3">
+
+                    <input type="hidden" asp-for="Id" />
+
+                    <button type="submit" class="btn btn-danger">Yes, Delete</button>
+                    <a asp-area="Admin" asp-action="Index" class="btn btn-secondary">Cancel</a>
+
+                </form>
+
+            </div>
+
+        </div>
+    </div>
+</div>

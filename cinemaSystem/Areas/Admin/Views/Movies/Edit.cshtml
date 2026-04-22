@@ -1,0 +1,82 @@
+﻿@model cinemaSystem.Models.Movie
+
+@{
+    ViewData["Title"] = "Edit Movie";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card">
+            <div class="card-header bg-white">
+                <h4>Edit Movie</h4>
+            </div>
+
+            <div class="card-body">
+                <form asp-action="Edit" enctype="multipart/form-data">
+                    <input type="hidden" asp-for="Id" />
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Movie Name</label>
+                            <input asp-for="Name" class="form-control" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label>Price</label>
+                            <input asp-for="Price" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Date</label>
+                            <input asp-for="DateTime" class="form-control" type="date" />
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label>Category</label>
+                            <select asp-for="CategoryId" class="form-control"
+                                    asp-items="@(new SelectList(ViewBag.Categories, "Id", "Name"))">
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label>Cinema</label>
+                            <select asp-for="CinemaId" class="form-control"
+                                    asp-items="@(new SelectList(ViewBag.Cinemas, "Id", "Name"))">
+                            </select>
+                        </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label>Main Image</label>
+                            <input type="file" name="mainImageFile" class="form-control" />
+
+                            @if (!string.IsNullOrEmpty(Model.MainImage))
+                            {
+                                <img src="@Model.MainImage" width="80" class="mt-2" />
+                            }
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Sub Images</label>
+                        <input type="file" name="SubImages" class="form-control" />
+                    </div>
+
+                    <div class="mb-3">
+                        <label>Actors</label>
+                        <select name="selectedActors" multiple class="form-control"
+                                asp-items="@(new SelectList(ViewBag.Actors, "Id", "Name", ViewBag.SelectedActors))">
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <a asp-action="Index" class="btn btn-secondary">Back</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

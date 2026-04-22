@@ -1,0 +1,31 @@
+﻿@model cinemaSystem.Models.Actor
+
+@{
+    ViewData["Title"] = "Edit Actor";
+    Layout = "~/Areas/Admin/Views/Shared/_AdminLayout.cshtml";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h4>Edit Actor</h4>
+            </div>
+            <div class="card-body">
+                <form asp-area="Admin" asp-action="Edit" enctype="multipart/form-data">
+                    <input type="hidden" asp-for="Id" />
+                    <div class="mb-3">
+                        <label>Full Name</label>
+                        <input asp-for="Name" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Image </label>
+                        <input asp-for="ImageUrl" class="form-control">
+                    </div>
+                    <button type="submit" class="btn btn-primary">Save Changes</button>
+                    <a asp-area="Admin" asp-action="Index" class="btn btn-secondary">Back</a>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
