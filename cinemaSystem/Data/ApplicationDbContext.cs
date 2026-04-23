@@ -23,6 +23,7 @@ namespace cinemaSystem.Data
         public DbSet<Actor> Actors { get; set; }
         public DbSet<Movie> Movies { get; set; }
         public DbSet<MovieActor> MovieActors { get; set; }
+        public DbSet<MovieImage> MovieImages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

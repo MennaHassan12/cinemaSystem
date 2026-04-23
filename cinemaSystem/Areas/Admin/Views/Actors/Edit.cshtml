@@ -7,25 +7,60 @@
 
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
+
+        <div class="card shadow-sm">
+
+            <div class="card-header bg-white">
                 <h4>Edit Actor</h4>
             </div>
+
             <div class="card-body">
-                <form asp-area="Admin" asp-action="Edit" enctype="multipart/form-data">
+
+                <form asp-area="Admin"
+                      asp-controller="Actors"
+                      asp-action="Edit"
+                      method="post"
+                      enctype="multipart/form-data">
+
                     <input type="hidden" asp-for="Id" />
+
                     <div class="mb-3">
-                        <label>Full Name</label>
-                        <input asp-for="Name" class="form-control" required>
+                        <label class="form-label">Full Name</label>
+                        <input asp-for="Name" class="form-control" required />
                     </div>
+
                     <div class="mb-3">
-                        <label>Image </label>
-                        <input asp-for="ImageUrl" class="form-control">
+                        <label class="form-label">Current Image</label><br />
+
+                        <img src="@(string.IsNullOrEmpty(Model.ImageUrl)
+                                                                 ? Url.Content("~/Images/default.png")
+                                                                 : Model.ImageUrl)"
+                             width="80"
+                             height="80"
+                             style="border-radius:50%; object-fit:cover;" />
                     </div>
-                    <button type="submit" class="btn btn-primary">Save Changes</button>
-                    <a asp-area="Admin" asp-action="Index" class="btn btn-secondary">Back</a>
+
+                    <div class="mb-3">
+                        <label class="form-label">Change Image</label>
+                        <input type="file" name="imageFile" class="form-control" />
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">
+                        Save Changes
+                    </button>
+
+                    <a asp-area="Admin"
+                       asp-controller="Actors"
+                       asp-action="Index"
+                       class="btn btn-secondary">
+                        Back
+                    </a>
+
                 </form>
+
             </div>
+
         </div>
+
     </div>
 </div>

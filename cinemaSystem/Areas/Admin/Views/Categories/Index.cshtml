@@ -7,14 +7,13 @@
 
 <div>
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Categories</h2>
         <a asp-area="Admin" asp-action="Create" class="btn btn-primary">+ Add Category</a>
     </div>
 
     <div class="table-container">
         <table class="table table-hover">
             <thead>
-                <tr><th>Name</th><th>Description</th><th>Actions</th></tr>
+                <tr><th>Name</th><th>Actions</th></tr>
             </thead>
             <tbody>
                 @foreach (var cat in Model)
@@ -23,7 +22,6 @@
                         <td>@cat.Name</td>
                         
                         <td>
-                            <a asp-area="Admin" asp-action="Edit" asp-route-id="@cat.Id" class="btn btn-sm btn-warning">Edit</a>
                             <a asp-area="Admin" asp-action="Delete" asp-route-id="@cat.Id" class="btn btn-sm btn-danger">Delete</a>
                         </td>
                     </tr>

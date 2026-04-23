@@ -6,29 +6,73 @@
 }
 
 <div>
+
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h2>Actors List</h2>
-        <a asp-area="Admin" asp-action="Create" class="btn btn-primary">+ Add New Actor</a>
+
+        <a asp-area="Admin"
+           asp-controller="Actors"
+           asp-action="Create"
+           class="btn btn-primary">
+            + Add New Actor
+        </a>
     </div>
 
-    <div class="table-container">
-        <table class="table table-hover">
-            <thead>
-                <tr><th>Image</th><th>Full Name</th><th>Actions</th></tr>
-            </thead>
-            <tbody>
-                @foreach (var actor in Model)
-                {
+    <div class="card shadow-sm">
+
+        <div class="card-body">
+
+            <table class="table table-hover align-middle">
+
+                <thead>
                     <tr>
-                        <td><img src="@(string.IsNullOrEmpty(actor.ImageUrl) ? "" : actor.ImageUrl)" width="50" style="border-radius:50%; height:50px; object-fit:cover;"></td>
-                        <td>@actor.Name</td>
-                        <td>
-                            <a asp-area="Admin" asp-action="Edit" asp-route-id="@actor.Id" class="btn btn-sm btn-warning">Edit</a>
-                            <a asp-area="Admin" asp-action="Delete" asp-route-id="@actor.Id" class="btn btn-sm btn-danger">Delete</a>
-                        </td>
+                        <th>Image</th>
+                        <th>Full Name</th>
+                        <th>Actions</th>
                     </tr>
-                }
-            </tbody>
-        </table>
+                </thead>
+
+                <tbody>
+                    @foreach (var actor in Model)
+                    {
+                        <tr>
+
+                            <td>
+                                <img src="@(string.IsNullOrEmpty(actor.ImageUrl)
+                                                                                 ? Url.Content("~/Images/default.png")
+                                                                                 : actor.ImageUrl)"
+                                     width="50"
+                                     height="50"
+                                     style="border-radius:50%; object-fit:cover;" />
+                            </td>
+
+                            <td>@actor.Name</td>
+
+                            <td>
+                                <a asp-area="Admin"
+                                   asp-controller="Actors"
+                                   asp-action="Edit"
+                                   asp-route-id="@actor.Id"
+                                   class="btn btn-warning btn-sm">
+                                    Edit
+                                </a>
+
+                                <a asp-area="Admin"
+                                   asp-controller="Actors"
+                                   asp-action="Delete"
+                                   asp-route-id="@actor.Id"
+                                   class="btn btn-danger btn-sm">
+                                    Delete
+                                </a>
+                            </td>
+
+                        </tr>
+                    }
+                </tbody>
+
+            </table>
+
+        </div>
+
     </div>
+
 </div>

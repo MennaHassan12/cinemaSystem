@@ -9,10 +9,12 @@ namespace cinemaSystem.Areas.Admin.Controllers
     public class MoviesController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public MoviesController(ApplicationDbContext context)
+        public MoviesController(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
        
@@ -21,14 +23,15 @@ namespace cinemaSystem.Areas.Admin.Controllers
             var movies = await _context.Movies
                 .Include(m => m.Category)
                 .Include(m => m.Cinema)
+                .Include(m => m.Images)
                 .Include(m => m.MovieActors)
-                .ThenInclude(ma => ma.Actor)
+                    .ThenInclude(ma => ma.Actor)
                 .ToListAsync();
 
             return View(movies);
         }
 
-       
+        
         public async Task<IActionResult> Create()
         {
             ViewBag.Categories = await _context.Categories.ToListAsync();
@@ -47,99 +50,69 @@ namespace cinemaSystem.Areas.Admin.Controllers
             List<IFormFile>? subImages,
             int[] selectedActors)
         {
-            
-            if (mainImageFile != null && mainImageFile.Length > 0)
+            if (!ModelState.IsValid)
             {
-                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
-
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-
-                string fileName = Guid.NewGuid() + Path.GetExtension(mainImageFile.FileName);
-                string filePath = Path.Combine(uploadsFolder, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await mainImageFile.CopyToAsync(stream);
-                }
-
-                movie.MainImage = "/images/" + fileName;
+                ViewBag.Categories = await _context.Categories.ToListAsync();
+                ViewBag.Cinemas = await _context.Cinemas.ToListAsync();
+                ViewBag.Actors = await _context.Actors.ToListAsync();
+                return View(movie);
             }
 
-           
-            if (subImages != null && subImages.Count > 0)
+            if (mainImageFile != null)
             {
-                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                movie.MainImage = await SaveImage(mainImageFile);
+            }
 
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
+            _context.Movies.Add(movie);
+            await _context.SaveChangesAsync();
 
-                List<string> imagesPaths = new List<string>();
+            if (selectedActors != null)
+            {
+                foreach (var actorId in selectedActors)
+                {
+                    _context.MovieActors.Add(new MovieActor
+                    {
+                        MovieId = movie.Id,
+                        ActorId = actorId
+                    });
+                }
+            }
 
+            if (subImages != null)
+            {
                 foreach (var file in subImages)
                 {
                     if (file.Length > 0)
                     {
-                        string fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-                        string filePath = Path.Combine(uploadsFolder, fileName);
-
-                        using (var stream = new FileStream(filePath, FileMode.Create))
-                        {
-                            await file.CopyToAsync(stream);
-                        }
-
-                        imagesPaths.Add("/images/" + fileName);
-                    }
-                }
-
-                movie.SubImages = imagesPaths;
-            }
-
-            if (ModelState.IsValid)
-            {
-                _context.Movies.Add(movie);
-                await _context.SaveChangesAsync();
-
-                
-                if (selectedActors != null && selectedActors.Length > 0)
-                {
-                    foreach (var actorId in selectedActors)
-                    {
-                        _context.MovieActors.Add(new MovieActor
+                        _context.MovieImages.Add(new MovieImage
                         {
                             MovieId = movie.Id,
-                            ActorId = actorId
+                            ImageUrl = await SaveImage(file)
                         });
                     }
-
-                    await _context.SaveChangesAsync();
                 }
-
-                return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Categories = await _context.Categories.ToListAsync();
-            ViewBag.Cinemas = await _context.Cinemas.ToListAsync();
-            ViewBag.Actors = await _context.Actors.ToListAsync();
+            await _context.SaveChangesAsync();
 
-            return View(movie);
+            return RedirectToAction(nameof(Index));
         }
 
         
         public async Task<IActionResult> Edit(int id)
         {
             var movie = await _context.Movies
+                .Include(m => m.Images)
                 .Include(m => m.MovieActors)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (movie == null)
                 return NotFound();
-
             ViewBag.Categories = await _context.Categories.ToListAsync();
             ViewBag.Cinemas = await _context.Cinemas.ToListAsync();
             ViewBag.Actors = await _context.Actors.ToListAsync();
 
-            ViewBag.SelectedActors = movie.MovieActors.Select(ma => ma.ActorId).ToArray();
+            ViewBag.SelectedActors = movie.MovieActors.Select(a => a.ActorId).ToArray();
 
             return View(movie);
         }
@@ -154,78 +127,71 @@ namespace cinemaSystem.Areas.Admin.Controllers
             List<IFormFile>? subImages,
             int[] selectedActors)
         {
-            if (id != movie.Id)
+            var existingMovie = await _context.Movies
+                .Include(m => m.Images)
+                .Include(m => m.MovieActors)
+                .FirstOrDefaultAsync(m => m.Id == id);
+
+            if (existingMovie == null)
                 return NotFound();
 
-            if (ModelState.IsValid)
+            if (!ModelState.IsValid)
             {
-                var existingMovie = await _context.Movies
-                    .Include(m => m.MovieActors)
-                    .FirstOrDefaultAsync(m => m.Id == id);
+                return View(movie);
+            }
 
-                if (existingMovie == null)
-                    return NotFound();
+            if (mainImageFile != null && mainImageFile.Length > 0)
+            {
+                DeleteImage(existingMovie.MainImage);
+                existingMovie.MainImage = await SaveImage(mainImageFile);
+            }
 
-                
-                if (mainImageFile != null && mainImageFile.Length > 0)
+            existingMovie.Name = movie.Name;
+            existingMovie.Price = movie.Price;
+            existingMovie.DateTime = movie.DateTime;
+            existingMovie.CategoryId = movie.CategoryId;
+            existingMovie.CinemaId = movie.CinemaId;
+
+            if (subImages != null && subImages.Count > 0)
+            {
+                foreach (var file in subImages)
                 {
-                    string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
-
-                    if (!Directory.Exists(uploadsFolder))
-                        Directory.CreateDirectory(uploadsFolder);
-
-                    string fileName = Guid.NewGuid() + Path.GetExtension(mainImageFile.FileName);
-                    string filePath = Path.Combine(uploadsFolder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    if (file.Length > 0)
                     {
-                        await mainImageFile.CopyToAsync(stream);
-                    }
-
-                    existingMovie.MainImage = "/images/" + fileName;
-                }
-
-                
-                existingMovie.Name = movie.Name;
-                existingMovie.Price = movie.Price;
-                existingMovie.DateTime = movie.DateTime;
-                existingMovie.CategoryId = movie.CategoryId;
-                existingMovie.CinemaId = movie.CinemaId;
-                existingMovie.SubImages = movie.SubImages;
-
-                
-                var oldActors = _context.MovieActors.Where(ma => ma.MovieId == id);
-                _context.MovieActors.RemoveRange(oldActors);
-                if (selectedActors != null && selectedActors.Length > 0)
-                {
-                    foreach (var actorId in selectedActors)
-                    {
-                        _context.MovieActors.Add(new MovieActor
+                        _context.MovieImages.Add(new MovieImage
                         {
-                            MovieId = id,
-                            ActorId = actorId
+                            MovieId = existingMovie.Id,
+                            ImageUrl = await SaveImage(file)
                         });
                     }
                 }
-
-                await _context.SaveChangesAsync();
-
-                return RedirectToAction(nameof(Index));
             }
 
-            ViewBag.Categories = await _context.Categories.ToListAsync();
-            ViewBag.Cinemas = await _context.Cinemas.ToListAsync();
-            ViewBag.Actors = await _context.Actors.ToListAsync();
+            _context.MovieActors.RemoveRange(existingMovie.MovieActors);
 
-            return View(movie);
+            if (selectedActors != null)
+            {
+                foreach (var actorId in selectedActors)
+                {
+                    _context.MovieActors.Add(new MovieActor
+                    {
+                        MovieId = existingMovie.Id,
+                        ActorId = actorId
+                    });
+                }
+            }
+
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
         }
 
         
         public async Task<IActionResult> Delete(int id)
         {
             var movie = await _context.Movies
-                .Include(m => m.Category)
-                .Include(m => m.Cinema)
+                .Include(m => m.Images)
+                .Include(m => m.MovieActors)
                 .FirstOrDefaultAsync(m => m.Id == id);
 
             if (movie == null)
@@ -234,18 +200,28 @@ namespace cinemaSystem.Areas.Admin.Controllers
             return View(movie);
         }
 
+        
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
         {
-            var movie = await _context.Movies.FindAsync(id);
+            var movie = await _context.Movies
+                .Include(m => m.Images)
+                .Include(m => m.MovieActors)
+                .FirstOrDefaultAsync(m => m.Id == id);
 
             if (movie != null)
             {
-                var movieActors = _context.MovieActors.Where(ma => ma.MovieId == id);
-                _context.MovieActors.RemoveRange(movieActors);
+                DeleteImage(movie.MainImage);
 
+                foreach (var img in movie.Images)
+                {
+                    DeleteImage(img.ImageUrl);
+                }
+                _context.MovieImages.RemoveRange(movie.Images);
+                _context.MovieActors.RemoveRange(movie.MovieActors);
                 _context.Movies.Remove(movie);
+
                 await _context.SaveChangesAsync();
             }
 
@@ -253,9 +229,33 @@ namespace cinemaSystem.Areas.Admin.Controllers
         }
 
         
-        private bool MovieExists(int id)
+        private async Task<string> SaveImage(IFormFile file)
         {
-            return _context.Movies.Any(e => e.Id == id);
+            string folder = Path.Combine(_env.WebRootPath, "Images");
+
+            if (!Directory.Exists(folder))
+                Directory.CreateDirectory(folder);
+
+            string fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+            string path = Path.Combine(folder, fileName);
+
+            using (var stream = new FileStream(path, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            return "/Images/" + fileName;
+        }
+
+        private void DeleteImage(string? path)
+        {
+            if (string.IsNullOrEmpty(path))
+                return;
+
+            string fullPath = Path.Combine(_env.WebRootPath, path.TrimStart('/'));
+
+            if (System.IO.File.Exists(fullPath))
+                System.IO.File.Delete(fullPath);
         }
     }
 }

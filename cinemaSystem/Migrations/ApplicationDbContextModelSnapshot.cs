@@ -22,6 +22,28 @@ namespace cinemaSystem.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("MovieImage", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ImageUrl")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("MovieId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MovieId");
+
+                    b.ToTable("MovieImages");
+                });
+
             modelBuilder.Entity("cinemaSystem.Models.Actor", b =>
                 {
                     b.Property<int>("Id")
@@ -102,7 +124,7 @@ namespace cinemaSystem.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("MainImageUrl")
+                    b.Property<string>("MainImage")
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Name")
@@ -116,7 +138,7 @@ namespace cinemaSystem.Migrations
                     b.Property<bool>("Status")
                         .HasColumnType("bit");
 
-                    b.Property<string>("SubImagesUrls")
+                    b.PrimitiveCollection<string>("SubImages")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
@@ -141,6 +163,17 @@ namespace cinemaSystem.Migrations
                     b.HasIndex("ActorId");
 
                     b.ToTable("MovieActors");
+                });
+
+            modelBuilder.Entity("MovieImage", b =>
+                {
+                    b.HasOne("cinemaSystem.Models.Movie", "Movie")
+                        .WithMany("Images")
+                        .HasForeignKey("MovieId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Movie");
                 });
 
             modelBuilder.Entity("cinemaSystem.Models.Movie", b =>
@@ -198,6 +231,8 @@ namespace cinemaSystem.Migrations
 
             modelBuilder.Entity("cinemaSystem.Models.Movie", b =>
                 {
+                    b.Navigation("Images");
+
                     b.Navigation("MovieActors");
                 });
 #pragma warning restore 612, 618

@@ -7,13 +7,20 @@
 
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card">
+
+        <div class="card shadow-sm">
+
             <div class="card-header">
                 <h4>Add Cinema</h4>
             </div>
 
             <div class="card-body">
-                <form asp-area="Admin" asp-action="Create" enctype="multipart/form-data">
+
+                <form asp-area="Admin"
+                      asp-controller="Cinemas"
+                      asp-action="Create"
+                      method="post"
+                      enctype="multipart/form-data">
 
                     <div class="mb-3">
                         <label>Name</label>
@@ -22,14 +29,25 @@
 
                     <div class="mb-3">
                         <label>Logo</label>
-                        <input type="file" name="ImageUrl" class="form-control" />
+                        <input type="file" name="logoFile" class="form-control" />
                     </div>
 
-                    <button type="submit" class="btn btn-success">Save</button>
-                    <a asp-area="Admin" asp-action="Index" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-success">
+                        Save
+                    </button>
+
+                    <a asp-area="Admin"
+                       asp-controller="Cinemas"
+                       asp-action="Index"
+                       class="btn btn-secondary">
+                        Cancel
+                    </a>
 
                 </form>
+
             </div>
+
         </div>
+
     </div>
 </div>

@@ -7,24 +7,47 @@
 
 <div class="row justify-content-center">
     <div class="col-md-6">
-        <div class="card">
-            <div class="card-header">
-                <h4>Add New Actor</h4>
+
+        <div class="card shadow-sm">
+
+            <div class="card-header bg-white">
+                <h4 class="mb-0">Add New Actor</h4>
             </div>
+
             <div class="card-body">
-                <form asp-area="Admin" asp-action="Create" enctype="multipart/form-data">
+
+                <form asp-area="Admin"
+                      asp-controller="Actors"
+                      asp-action="Create"
+                      method="post"
+                      enctype="multipart/form-data">
+
                     <div class="mb-3">
-                        <label>Full Name</label>
-                        <input asp-for="Name" class="form-control" required>
+                        <label class="form-label">Full Name</label>
+                        <input asp-for="Name" class="form-control" required />
                     </div>
+
                     <div class="mb-3">
-                        <label>Image </label>
-                        <input type="file" asp-for="ImageUrl" class="form-control" placeholder="form-control">
+                        <label class="form-label">Image</label>
+                        <input type="file" name="imageFile" class="form-control" />
                     </div>
-                    <button type="submit" class="btn btn-success">Save</button>
-                    <a asp-area="Admin" asp-action="Index" class="btn btn-secondary">Cancel</a>
+
+                    <button type="submit" class="btn btn-success">
+                        Save
+                    </button>
+
+                    <a asp-area="Admin"
+                       asp-controller="Actors"
+                       asp-action="Index"
+                       class="btn btn-secondary">
+                        Cancel
+                    </a>
+
                 </form>
+
             </div>
+
         </div>
+
     </div>
 </div>

@@ -9,10 +9,12 @@ namespace cinemaSystem.Areas.Admin.Controllers
     public class CinemasController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public CinemasController(ApplicationDbContext context)
+        public CinemasController(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
         public async Task<IActionResult> Index()
@@ -30,28 +32,29 @@ namespace cinemaSystem.Areas.Admin.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Cinema cinema, IFormFile logoFile)
         {
-            if (logoFile != null && logoFile.Length > 0)
-            {
-                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
-
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-
-                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(logoFile.FileName);
-                string filePath = Path.Combine(uploadsFolder, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await logoFile.CopyToAsync(stream);
-                }
-
-                cinema.ImageUrl = "/images/" + fileName;
-            }
-
             if (ModelState.IsValid)
             {
+                if (logoFile != null && logoFile.Length > 0)
+                {
+                    string uploadsFolder = Path.Combine(_env.WebRootPath, "Images");
+
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(logoFile.FileName);
+                    string filePath = Path.Combine(uploadsFolder, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await logoFile.CopyToAsync(stream);
+                    }
+
+                    cinema.ImageUrl = "/Images/" + fileName;
+                }
+
                 _context.Add(cinema);
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
 
@@ -80,26 +83,22 @@ namespace cinemaSystem.Areas.Admin.Controllers
             if (existingCinema == null)
                 return NotFound();
 
-            if (logoFile != null && logoFile.Length > 0)
+            if (ModelState.IsValid)
             {
-                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
+                existingCinema.Name = cinema.Name;
 
-                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(logoFile.FileName);
-                string filePath = Path.Combine(uploadsFolder, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
+                if (logoFile != null && logoFile.Length > 0)
                 {
-                    await logoFile.CopyToAsync(stream);
+                    DeleteImage(existingCinema.ImageUrl);
+
+                    existingCinema.ImageUrl = await SaveImage(logoFile);
                 }
 
-                existingCinema.ImageUrl = "/images/" + fileName;
+                await _context.SaveChangesAsync();
+                return RedirectToAction(nameof(Index));
             }
 
-            existingCinema.Name = cinema.Name;
-
-            await _context.SaveChangesAsync();
-
-            return RedirectToAction(nameof(Index));
+            return View(cinema);
         }
 
         public async Task<IActionResult> Delete(int id)
@@ -120,11 +119,44 @@ namespace cinemaSystem.Areas.Admin.Controllers
 
             if (cinema != null)
             {
+                DeleteImage(cinema.ImageUrl);
+
                 _context.Cinemas.Remove(cinema);
                 await _context.SaveChangesAsync();
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+
+        private async Task<string> SaveImage(IFormFile file)
+        {
+            string folder = Path.Combine(_env.WebRootPath, "Images");
+
+            if (!Directory.Exists(folder))
+                Directory.CreateDirectory(folder);
+
+            string fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+            string path = Path.Combine(folder, fileName);
+            using (var stream = new FileStream(path, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            return "/Images/" + fileName;
+        }
+
+        private void DeleteImage(string? imagePath)
+        {
+            if (string.IsNullOrEmpty(imagePath))
+                return;
+
+            string fullPath = Path.Combine(_env.WebRootPath, imagePath.TrimStart('/'));
+
+            if (System.IO.File.Exists(fullPath))
+            {
+                System.IO.File.Delete(fullPath);
+            }
         }
     }
 }

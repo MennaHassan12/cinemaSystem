@@ -9,52 +9,52 @@ namespace cinemaSystem.Areas.Admin.Controllers
     public class ActorsController : Controller
     {
         private readonly ApplicationDbContext _context;
+        private readonly IWebHostEnvironment _env;
 
-        public ActorsController(ApplicationDbContext context)
+        public ActorsController(ApplicationDbContext context, IWebHostEnvironment env)
         {
             _context = context;
+            _env = env;
         }
 
-        
         public async Task<IActionResult> Index()
         {
             var actors = await _context.Actors.ToListAsync();
             return View(actors);
         }
 
-       
         public IActionResult Create()
         {
             return View();
         }
 
-        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(Actor actor, IFormFile? imageFile)
         {
-            if (imageFile != null && imageFile.Length > 0)
-            {
-                string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
-
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-
-                string fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
-                string filePath = Path.Combine(uploadsFolder, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await imageFile.CopyToAsync(stream);
-                }
-
-                actor.ImageUrl = "/images/" + fileName;
-            }
-
             if (ModelState.IsValid)
             {
+                if (imageFile != null && imageFile.Length > 0)
+                {
+                    string uploadsFolder = Path.Combine(_env.WebRootPath, "Images");
+
+                    if (!Directory.Exists(uploadsFolder))
+                        Directory.CreateDirectory(uploadsFolder);
+
+                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
+                    string filePath = Path.Combine(uploadsFolder, fileName);
+
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await imageFile.CopyToAsync(stream);
+                    }
+
+                    actor.ImageUrl = "/Images/" + fileName;
+                }
+
                 _context.Actors.Add(actor);
                 await _context.SaveChangesAsync();
+
                 return RedirectToAction(nameof(Index));
             }
 
@@ -72,7 +72,6 @@ namespace cinemaSystem.Areas.Admin.Controllers
             return View(actor);
         }
 
-        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(int id, Actor actor, IFormFile? imageFile)
@@ -80,41 +79,41 @@ namespace cinemaSystem.Areas.Admin.Controllers
             if (id != actor.Id)
                 return NotFound();
 
-            if (ModelState.IsValid)
+            var existingActor = await _context.Actors.FindAsync(id);
+
+            if (existingActor == null)
+                return NotFound();
+
+            if (!ModelState.IsValid)
+                return View(actor);
+
+            existingActor.Name = actor.Name;
+
+            if (imageFile != null && imageFile.Length > 0)
             {
-                var existingActor = await _context.Actors.FindAsync(id);
+                DeleteImage(existingActor.ImageUrl);
 
-                if (existingActor == null)
-                    return NotFound();
+                string uploadsFolder = Path.Combine(_env.WebRootPath, "Images");
 
-                if (imageFile != null && imageFile.Length > 0)
+                if (!Directory.Exists(uploadsFolder))
+                    Directory.CreateDirectory(uploadsFolder);
+
+                string fileName = Guid.NewGuid() + Path.GetExtension(imageFile.FileName);
+                string filePath = Path.Combine(uploadsFolder, fileName);
+
+                using (var stream = new FileStream(filePath, FileMode.Create))
                 {
-                    string uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot/images");
-
-                    if (!Directory.Exists(uploadsFolder))
-                        Directory.CreateDirectory(uploadsFolder);
-
-                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
-                    string filePath = Path.Combine(uploadsFolder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await imageFile.CopyToAsync(stream);
-                    }
-
-                    existingActor.ImageUrl = "/images/" + fileName;
+                    await imageFile.CopyToAsync(stream);
                 }
 
-                existingActor.Name = actor.Name;
-
-                await _context.SaveChangesAsync();
-
-                return RedirectToAction(nameof(Index));
+                existingActor.ImageUrl = "/Images/" + fileName;
             }
 
-            return View(actor);
+            await _context.SaveChangesAsync();
+
+            return RedirectToAction(nameof(Index));
         }
-        
+
         public async Task<IActionResult> Delete(int id)
         {
             var actor = await _context.Actors.FindAsync(id);
@@ -125,7 +124,6 @@ namespace cinemaSystem.Areas.Admin.Controllers
             return View(actor);
         }
 
-        
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> DeleteConfirmed(int id)
@@ -134,11 +132,29 @@ namespace cinemaSystem.Areas.Admin.Controllers
 
             if (actor != null)
             {
+                DeleteImage(actor.ImageUrl);
+
                 _context.Actors.Remove(actor);
                 await _context.SaveChangesAsync();
             }
 
             return RedirectToAction(nameof(Index));
         }
+
+        private void DeleteImage(string? imageUrl)
+        {
+            if (string.IsNullOrEmpty(imageUrl))
+                return;
+
+            string fileName = Path.GetFileName(imageUrl);
+            string fullPath = Path.Combine(_env.WebRootPath, "Images", fileName);
+
+            if (System.IO.File.Exists(fullPath))
+            {
+                System.IO.File.Delete(fullPath);
+            }
+        }
     }
+
+
 }

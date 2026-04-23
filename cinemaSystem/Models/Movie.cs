@@ -35,14 +35,9 @@ namespace cinemaSystem.Models
         public virtual Cinema? Cinema { get; set; }
 
         public virtual ICollection<MovieActor> MovieActors { get; set; } = new List<MovieActor>();
+
+        public virtual ICollection<MovieImage> Images { get; set; }=new List<MovieImage>();
     }
 
-    public class MovieActor
-    {
-        public int MovieId { get; set; }
-        public int ActorId { get; set; }
-
-        public virtual Movie? Movie { get; set; }
-        public virtual Actor? Actor { get; set; }
-    }
+    
 }
