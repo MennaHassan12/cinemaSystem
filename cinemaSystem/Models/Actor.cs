@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using cinemaSystem.Validation;
+using System.ComponentModel.DataAnnotations;
 
 namespace cinemaSystem.Models
 {
@@ -8,7 +9,9 @@ namespace cinemaSystem.Models
         public int Id { get; set; }
 
         [Required(ErrorMessage = "Name is required")]
-        [MaxLength(100)]
+        //[MaxLength(100)]
+        //[MinLength(3)]
+        [ActorLength(3,100)]
         public string Name { get; set; }
 
         public string? ImageUrl { get; set; }

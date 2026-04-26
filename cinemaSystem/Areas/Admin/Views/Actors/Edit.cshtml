@@ -26,7 +26,9 @@
 
                     <div class="mb-3">
                         <label class="form-label">Full Name</label>
-                        <input asp-for="Name" class="form-control" required />
+                        <input asp-for="Name" class="form-control"  />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+
                     </div>
 
                     <div class="mb-3">
@@ -64,3 +66,6 @@
 
     </div>
 </div>
+@section Scripts{
+    <partial name="_ValidationScriptsPartial" />
+}

@@ -33,6 +33,8 @@ namespace cinemaSystem.Areas.Admin.Controllers
             {
                 _context.Add(category);
                 await _context.SaveChangesAsync();
+                TempData["Success"] = "Category added successfully!";
+
                 return RedirectToAction(nameof(Index));
             }
             return View(category);
@@ -59,6 +61,7 @@ namespace cinemaSystem.Areas.Admin.Controllers
                 _context.Categories.Remove(category);
                 await _context.SaveChangesAsync();
             }
+            TempData["Success"] = "Category deleted successfully!";
 
             return RedirectToAction(nameof(Index));
         }

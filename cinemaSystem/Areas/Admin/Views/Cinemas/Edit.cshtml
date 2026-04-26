@@ -27,6 +27,8 @@
                     <div class="mb-3">
                         <label>Name</label>
                         <input asp-for="Name" class="form-control" />
+                        <span asp-validation-for="Name" class="text-danger"></span>
+
                     </div>
 
                     @if (!string.IsNullOrEmpty(Model.ImageUrl))
@@ -62,3 +64,6 @@
 
     </div>
 </div>
+@section Scripts{
+    <partial name="_ValidationScriptsPartial" />
+}

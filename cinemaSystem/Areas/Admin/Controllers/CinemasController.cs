@@ -54,6 +54,7 @@ namespace cinemaSystem.Areas.Admin.Controllers
 
                 _context.Add(cinema);
                 await _context.SaveChangesAsync();
+                TempData["Success"] = "Cinema added successfully!";
 
                 return RedirectToAction(nameof(Index));
             }
@@ -95,6 +96,8 @@ namespace cinemaSystem.Areas.Admin.Controllers
                 }
 
                 await _context.SaveChangesAsync();
+                TempData["Success"] = "Cinema updated successfully!";
+
                 return RedirectToAction(nameof(Index));
             }
 
@@ -124,6 +127,7 @@ namespace cinemaSystem.Areas.Admin.Controllers
                 _context.Cinemas.Remove(cinema);
                 await _context.SaveChangesAsync();
             }
+            TempData["Success"] = "Cinema deleted successfully!";
 
             return RedirectToAction(nameof(Index));
         }
