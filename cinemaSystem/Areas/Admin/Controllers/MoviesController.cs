@@ -1,5 +1,6 @@
 ﻿using cinemaSystem.Data;
 using cinemaSystem.Models;
+using cinemaSystem.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -9,116 +10,80 @@ namespace cinemaSystem.Areas.Admin.Controllers
     public class MoviesController : Controller
     {
         private readonly ApplicationDbContext _context;
-        private readonly IWebHostEnvironment _env;
+        private readonly IMovieService _movieService;
 
-        public MoviesController(ApplicationDbContext context, IWebHostEnvironment env)
+        public MoviesController(ApplicationDbContext context, IMovieService movieService)
         {
             _context = context;
-            _env = env;
+            _movieService = movieService;
         }
 
-       
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(CancellationToken ct)
         {
             var movies = await _context.Movies
                 .Include(m => m.Category)
                 .Include(m => m.Cinema)
                 .Include(m => m.Images)
                 .Include(m => m.MovieActors)
-                    .ThenInclude(ma => ma.Actor)
-                .ToListAsync();
+                .ThenInclude(ma => ma.Actor)
+                .ToListAsync(ct);
 
             return View(movies);
         }
 
-        
-        public async Task<IActionResult> Create()
+        [HttpGet]
+        public async Task<IActionResult> Create(CancellationToken ct)
         {
-            ViewBag.Categories = await _context.Categories.ToListAsync();
-            ViewBag.Cinemas = await _context.Cinemas.ToListAsync();
-            ViewBag.Actors = await _context.Actors.ToListAsync();
+            ViewBag.Categories = await _context.Categories.ToListAsync(ct);
+            ViewBag.Cinemas = await _context.Cinemas.ToListAsync(ct);
+            ViewBag.Actors = await _context.Actors.ToListAsync(ct);
 
             return View();
         }
 
-        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(
             Movie movie,
             IFormFile? mainImageFile,
             List<IFormFile>? subImages,
-            int[] selectedActors)
+            int[] selectedActors,
+            CancellationToken ct)
         {
             if (!ModelState.IsValid)
             {
-                ViewBag.Categories = await _context.Categories.ToListAsync();
-                ViewBag.Cinemas = await _context.Cinemas.ToListAsync();
-                ViewBag.Actors = await _context.Actors.ToListAsync();
+                ViewBag.Categories = await _context.Categories.ToListAsync(ct);
+                ViewBag.Cinemas = await _context.Cinemas.ToListAsync(ct);
+                ViewBag.Actors = await _context.Actors.ToListAsync(ct);
                 return View(movie);
             }
 
-            if (mainImageFile != null)
-            {
-                movie.MainImage = await SaveImage(mainImageFile);
-            }
+            await _movieService.CreateMovie(movie, mainImageFile, subImages, selectedActors);
 
-            _context.Movies.Add(movie);
-            await _context.SaveChangesAsync();
-
-            if (selectedActors != null)
-            {
-                foreach (var actorId in selectedActors)
-                {
-                    _context.MovieActors.Add(new MovieActor
-                    {
-                        MovieId = movie.Id,
-                        ActorId = actorId
-                    });
-                }
-            }
-
-            if (subImages != null)
-            {
-                foreach (var file in subImages)
-                {
-                    if (file.Length > 0)
-                    {
-                        _context.MovieImages.Add(new MovieImage
-                        {
-                            MovieId = movie.Id,
-                            ImageUrl = await SaveImage(file)
-                        });
-                    }
-                }
-            }
-
-            await _context.SaveChangesAsync();
             TempData["Success"] = "Movie added successfully!";
-
             return RedirectToAction(nameof(Index));
         }
 
-        
-        public async Task<IActionResult> Edit(int id)
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id, CancellationToken ct)
         {
             var movie = await _context.Movies
                 .Include(m => m.Images)
                 .Include(m => m.MovieActors)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .FirstOrDefaultAsync(m => m.Id == id, ct);
 
             if (movie == null)
                 return NotFound();
-            ViewBag.Categories = await _context.Categories.ToListAsync();
-            ViewBag.Cinemas = await _context.Cinemas.ToListAsync();
-            ViewBag.Actors = await _context.Actors.ToListAsync();
+
+            ViewBag.Categories = await _context.Categories.ToListAsync(ct);
+            ViewBag.Cinemas = await _context.Cinemas.ToListAsync(ct);
+            ViewBag.Actors = await _context.Actors.ToListAsync(ct);
 
             ViewBag.SelectedActors = movie.MovieActors.Select(a => a.ActorId).ToArray();
 
             return View(movie);
         }
 
-        
         [HttpPost]
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Edit(
@@ -126,139 +91,37 @@ namespace cinemaSystem.Areas.Admin.Controllers
             Movie movie,
             IFormFile? mainImageFile,
             List<IFormFile>? subImages,
-            int[] selectedActors)
+            int[] selectedActors,
+            CancellationToken ct)
         {
-            var existingMovie = await _context.Movies
-                .Include(m => m.Images)
-                .Include(m => m.MovieActors)
-                .FirstOrDefaultAsync(m => m.Id == id);
-
-            if (existingMovie == null)
-                return NotFound();
-
             if (!ModelState.IsValid)
-            {
                 return View(movie);
-            }
 
-            if (mainImageFile != null && mainImageFile.Length > 0)
-            {
-                DeleteImage(existingMovie.MainImage);
-                existingMovie.MainImage = await SaveImage(mainImageFile);
-            }
+            await _movieService.UpdateMovie(movie, id, mainImageFile, subImages, selectedActors);
 
-            existingMovie.Name = movie.Name;
-            existingMovie.Price = movie.Price;
-            existingMovie.DateTime = movie.DateTime;
-            existingMovie.CategoryId = movie.CategoryId;
-            existingMovie.CinemaId = movie.CinemaId;
-
-            if (subImages != null && subImages.Count > 0)
-            {
-                foreach (var file in subImages)
-                {
-                    if (file.Length > 0)
-                    {
-                        _context.MovieImages.Add(new MovieImage
-                        {
-                            MovieId = existingMovie.Id,
-                            ImageUrl = await SaveImage(file)
-                        });
-                    }
-                }
-            }
-
-            _context.MovieActors.RemoveRange(existingMovie.MovieActors);
-
-            if (selectedActors != null)
-            {
-                foreach (var actorId in selectedActors)
-                {
-                    _context.MovieActors.Add(new MovieActor
-                    {
-                        MovieId = existingMovie.Id,
-                        ActorId = actorId
-                    });
-                }
-            }
-
-            await _context.SaveChangesAsync();
             TempData["Success"] = "Movie updated successfully!";
-
             return RedirectToAction(nameof(Index));
         }
 
-        
-        public async Task<IActionResult> Delete(int id)
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
             var movie = await _context.Movies
-                .Include(m => m.Images)
-                .Include(m => m.MovieActors)
-                .FirstOrDefaultAsync(m => m.Id == id);
+                .FirstOrDefaultAsync(m => m.Id == id, ct);
 
             if (movie == null)
-                return NotFound();
-
-            return View(movie);
+                return NotFound(); return View(movie);
         }
 
-        
-        [HttpPost, ActionName("Delete")]
+        [HttpPost]
+        [ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken ct)
         {
-            var movie = await _context.Movies
-                .Include(m => m.Images)
-                .Include(m => m.MovieActors)
-                .FirstOrDefaultAsync(m => m.Id == id);
+            await _movieService.DeleteMovie(id);
 
-            if (movie != null)
-            {
-                DeleteImage(movie.MainImage);
-
-                foreach (var img in movie.Images)
-                {
-                    DeleteImage(img.ImageUrl);
-                }
-                _context.MovieImages.RemoveRange(movie.Images);
-                _context.MovieActors.RemoveRange(movie.MovieActors);
-                _context.Movies.Remove(movie);
-
-                await _context.SaveChangesAsync();
-            }
             TempData["Success"] = "Movie deleted successfully!";
-
             return RedirectToAction(nameof(Index));
-        }
-
-        
-        private async Task<string> SaveImage(IFormFile file)
-        {
-            string folder = Path.Combine(_env.WebRootPath, "Images");
-
-            if (!Directory.Exists(folder))
-                Directory.CreateDirectory(folder);
-
-            string fileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
-            string path = Path.Combine(folder, fileName);
-
-            using (var stream = new FileStream(path, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
-
-            return "/Images/" + fileName;
-        }
-
-        private void DeleteImage(string? path)
-        {
-            if (string.IsNullOrEmpty(path))
-                return;
-
-            string fullPath = Path.Combine(_env.WebRootPath, path.TrimStart('/'));
-
-            if (System.IO.File.Exists(fullPath))
-                System.IO.File.Delete(fullPath);
         }
     }
 }

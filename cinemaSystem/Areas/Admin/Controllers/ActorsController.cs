@@ -1,71 +1,48 @@
-﻿using cinemaSystem.Data;
-using cinemaSystem.Models;
+﻿using cinemaSystem.Models;
+using cinemaSystem.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace cinemaSystem.Areas.Admin.Controllers
 {
     [Area("Admin")]
     public class ActorsController : Controller
     {
-        private readonly ApplicationDbContext _context;
-        private readonly IWebHostEnvironment _env;
+        private readonly IActorService _actorService;
 
-        public ActorsController(ApplicationDbContext context, IWebHostEnvironment env)
+        public ActorsController(IActorService actorService)
         {
-            _context = context;
-            _env = env;
+            _actorService = actorService;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(CancellationToken ct)
         {
-            var actors = await _context.Actors.ToListAsync();
+            var actors = await _actorService.GetAllAsync(ct);
             return View(actors);
         }
 
+        [HttpGet]
         public IActionResult Create()
         {
-            return View();
+            return View(new Actor());
         }
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create(Actor actor, IFormFile? imageFile)
+        public async Task<IActionResult> Create(Actor actor, IFormFile? imageFile, CancellationToken ct)
         {
-            if (ModelState.IsValid)
-            {
-                if (imageFile != null && imageFile.Length > 0)
-                {
-                    string uploadsFolder = Path.Combine(_env.WebRootPath, "Images");
+            if (!ModelState.IsValid)
+                return View(actor);
 
-                    if (!Directory.Exists(uploadsFolder))
-                        Directory.CreateDirectory(uploadsFolder);
+            await _actorService.CreateAsync(actor, imageFile, ct);
 
-                    string fileName = Guid.NewGuid().ToString() + Path.GetExtension(imageFile.FileName);
-                    string filePath = Path.Combine(uploadsFolder, fileName);
-
-                    using (var stream = new FileStream(filePath, FileMode.Create))
-                    {
-                        await imageFile.CopyToAsync(stream);
-                    }
-
-                    actor.ImageUrl = "/Images/" + fileName;
-                }
-
-                _context.Actors.Add(actor);
-                await _context.SaveChangesAsync();
-
-                TempData["Success"] = "Actor added successfully!";
-                return RedirectToAction(nameof(Index));
-            }
-
-            return View(actor);
+            TempData["Success"] = "Actor added successfully!";
+            return RedirectToAction(nameof(Index));
         }
 
-       
-        public async Task<IActionResult> Edit(int id)
+        [HttpGet]
+        public async Task<IActionResult> Edit(int id, CancellationToken ct)
         {
-            var actor = await _context.Actors.FindAsync(id);
+            var actor = await _actorService.GetByIdAsync(id, ct);
 
             if (actor == null)
                 return NotFound();
@@ -75,51 +52,21 @@ namespace cinemaSystem.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, Actor actor, IFormFile? imageFile)
+        public async Task<IActionResult> Edit(int id, Actor actor, IFormFile? imageFile, CancellationToken ct)
         {
-            if (id != actor.Id)
-                return NotFound();
-
-            var existingActor = await _context.Actors.FindAsync(id);
-
-            if (existingActor == null)
-                return NotFound();
-
             if (!ModelState.IsValid)
                 return View(actor);
 
-            existingActor.Name = actor.Name;
+            await _actorService.UpdateAsync(id, actor, imageFile, ct);
 
-            if (imageFile != null && imageFile.Length > 0)
-            {
-                DeleteImage(existingActor.ImageUrl);
-
-                string uploadsFolder = Path.Combine(_env.WebRootPath, "Images");
-
-                if (!Directory.Exists(uploadsFolder))
-                    Directory.CreateDirectory(uploadsFolder);
-
-                string fileName = Guid.NewGuid() + Path.GetExtension(imageFile.FileName);
-                string filePath = Path.Combine(uploadsFolder, fileName);
-
-                using (var stream = new FileStream(filePath, FileMode.Create))
-                {
-                    await imageFile.CopyToAsync(stream);
-                }
-
-                existingActor.ImageUrl = "/Images/" + fileName;
-            }
-
-            await _context.SaveChangesAsync();
             TempData["Success"] = "Actor updated successfully!";
-
-
             return RedirectToAction(nameof(Index));
         }
 
-        public async Task<IActionResult> Delete(int id)
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
-            var actor = await _context.Actors.FindAsync(id);
+            var actor = await _actorService.GetByIdAsync(id, ct);
 
             if (actor == null)
                 return NotFound();
@@ -129,36 +76,12 @@ namespace cinemaSystem.Areas.Admin.Controllers
 
         [HttpPost, ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken ct)
         {
-            var actor = await _context.Actors.FindAsync(id);
+            await _actorService.DeleteAsync(id, ct);
 
-            if (actor != null)
-            {
-                DeleteImage(actor.ImageUrl);
-
-                _context.Actors.Remove(actor);
-                await _context.SaveChangesAsync();
-            }
             TempData["Success"] = "Actor deleted successfully!";
-
             return RedirectToAction(nameof(Index));
         }
-
-        private void DeleteImage(string? imageUrl)
-        {
-            if (string.IsNullOrEmpty(imageUrl))
-                return;
-
-            string fileName = Path.GetFileName(imageUrl);
-            string fullPath = Path.Combine(_env.WebRootPath, "Images", fileName);
-
-            if (System.IO.File.Exists(fullPath))
-            {
-                System.IO.File.Delete(fullPath);
-            }
-        }
     }
-
-
 }

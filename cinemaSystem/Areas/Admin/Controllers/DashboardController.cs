@@ -1,45 +1,27 @@
-﻿using cinemaSystem.Data;
+﻿using cinemaSystem.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace cinemaSystem.Areas.Admin.Controllers
 {
     [Area("Admin")]
     public class DashboardController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IDashboardService _dashboardService;
 
-        public DashboardController(ApplicationDbContext context)
+        public DashboardController(IDashboardService dashboardService)
         {
-            _context = context;
+            _dashboardService = dashboardService;
         }
 
         public async Task<IActionResult> Index()
         {
-            var totalMovies = await _context.Movies.CountAsync();
-            var totalActors = await _context.Actors.CountAsync();
-            var totalCinemas = await _context.Cinemas.CountAsync();
-            var totalCategories = await _context.Categories.CountAsync();
+            ViewBag.TotalMovies = await _dashboardService.GetMoviesCount();
+            ViewBag.TotalActors = await _dashboardService.GetActorsCount();
+            ViewBag.TotalCinemas = await _dashboardService.GetCinemasCount();
+            ViewBag.TotalCategories = await _dashboardService.GetCategoriesCount();
 
-            var recentActors = await _context.Actors
-                .OrderByDescending(a => a.Id)
-                .Take(6)
-                .ToListAsync();
-
-            var recentMovies = await _context.Movies
-                .Include(m => m.Category)
-                .Include(m => m.Cinema)
-                .OrderByDescending(m => m.Id)
-                .Take(6)
-                .ToListAsync();
-
-            ViewBag.TotalMovies = totalMovies;
-            ViewBag.TotalActors = totalActors;
-            ViewBag.TotalCinemas = totalCinemas;
-            ViewBag.TotalCategories = totalCategories;
-
-            ViewBag.RecentActors = recentActors;
-            ViewBag.RecentMovies = recentMovies;
+            ViewBag.RecentActors = await _dashboardService.GetRecentActors();
+            ViewBag.RecentMovies = await _dashboardService.GetRecentMovies();
 
             return View();
         }

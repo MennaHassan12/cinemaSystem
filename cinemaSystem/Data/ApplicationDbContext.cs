@@ -1,22 +1,16 @@
-﻿using cinemaSystem.Models;
-using System.Collections.Generic;
-using System.Reflection.Emit;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
+using cinemaSystem.Models;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 
 namespace cinemaSystem.Data
 {
-    public class ApplicationDbContext : DbContext
+    public class ApplicationDbContext : IdentityDbContext <ApplicationUser>
     {
-        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
+            : base(options)
         {
-            if (!optionsBuilder.IsConfigured)
-            {
-                optionsBuilder.UseSqlServer("Data Source=.\\SQLEXPRESS;Initial Catalog =CinemaSystem; Integrated Security=True;Connect Timeout=30;Encrypt=True;Trust Server Certificate=True;Application Intent=ReadWrite;Multi Subnet Failover=False;Command Timeout=30");
-            }
         }
-
-      
-        
 
         public DbSet<Category> Categories { get; set; }
         public DbSet<Cinema> Cinemas { get; set; }
@@ -24,6 +18,7 @@ namespace cinemaSystem.Data
         public DbSet<Movie> Movies { get; set; }
         public DbSet<MovieActor> MovieActors { get; set; }
         public DbSet<MovieImage> MovieImages { get; set; }
+        //public DbSet<ApplicationUser> ApplicationUsers{get; set;}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -41,6 +36,9 @@ namespace cinemaSystem.Data
                 .HasOne(ma => ma.Actor)
                 .WithMany(a => a.MovieActors)
                 .HasForeignKey(ma => ma.ActorId);
+
+            //modelBuilder.Entity<IdentityUser>()
+            //    .ToTable("",);
         }
     }
 }

@@ -1,25 +1,26 @@
-﻿using cinemaSystem.Data;
+﻿using cinemaSystem.Interfaces;
 using cinemaSystem.Models;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace cinemaSystem.Areas.Admin.Controllers
 {
     [Area("Admin")]
     public class CategoriesController : Controller
     {
-        private readonly ApplicationDbContext _context;
+        private readonly IRepository<Category> _repo;
 
-        public CategoriesController(ApplicationDbContext context)
+        public CategoriesController(IRepository<Category> repo)
         {
-            _context = context;
+            _repo = repo;
         }
 
-        public async Task<IActionResult> Index()
+        public async Task<IActionResult> Index(CancellationToken ct)
         {
-            return View(await _context.Categories.ToListAsync());
+            var categories = await _repo.GetAsync(ct);
+            return View(categories);
         }
 
+        [HttpGet]
         public IActionResult Create()
         {
             return View();
@@ -27,22 +28,22 @@ namespace cinemaSystem.Areas.Admin.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Create([Bind("Name,Description")] Category category)
+        public async Task<IActionResult> Create(Category category, CancellationToken ct)
         {
-            if (ModelState.IsValid)
-            {
-                _context.Add(category);
-                await _context.SaveChangesAsync();
-                TempData["Success"] = "Category added successfully!";
+            if (!ModelState.IsValid)
+                return View(category);
 
-                return RedirectToAction(nameof(Index));
-            }
-            return View(category);
+            await _repo.CreateAsync(category, ct);
+            await _repo.CommitAsync(ct);
+
+            TempData["Success"] = "Category added successfully!";
+            return RedirectToAction(nameof(Index));
         }
-        public async Task<IActionResult> Delete(int id)
+
+        [HttpGet]
+        public async Task<IActionResult> Delete(int id, CancellationToken ct)
         {
-            var category = await _context.Categories
-                .FirstOrDefaultAsync(c => c.Id == id);
+            var category = await _repo.GetOneAsync(id, ct);
 
             if (category == null)
                 return NotFound();
@@ -51,18 +52,19 @@ namespace cinemaSystem.Areas.Admin.Controllers
         }
 
         [HttpPost]
+        [ActionName("Delete")]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> DeleteConfirmed(int id)
+        public async Task<IActionResult> DeleteConfirmed(int id, CancellationToken ct)
         {
-            var category = await _context.Categories.FindAsync(id);
+            var category = await _repo.GetOneAsync(id, ct);
 
             if (category != null)
             {
-                _context.Categories.Remove(category);
-                await _context.SaveChangesAsync();
+                _repo.Delete(category);
+                await _repo.CommitAsync(ct);
             }
-            TempData["Success"] = "Category deleted successfully!";
 
+            TempData["Success"] = "Category deleted successfully!";
             return RedirectToAction(nameof(Index));
         }
     }

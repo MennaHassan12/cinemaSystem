@@ -1,4 +1,8 @@
 using cinemaSystem.Data;
+using cinemaSystem.Interfaces;
+using cinemaSystem.Interfaces.cinemaSystem.Interfaces;
+using cinemaSystem.Repositories;
+using cinemaSystem.Services;
 using Microsoft.EntityFrameworkCore;
 
 namespace cinemaSystem
@@ -9,32 +13,37 @@ namespace cinemaSystem
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            // Add services to the container.
             builder.Services.AddControllersWithViews();
-            builder.Services.AddDbContext<ApplicationDbContext>();
+
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+                options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+
+            builder.Services.AddScoped(typeof(IRepository<>), typeof(Repository<>));
+            builder.Services.AddScoped<IActorService, ActorService>();
+            builder.Services.AddScoped<IImageService, ImageService>();
+            builder.Services.AddScoped<IMovieService, MovieService>();
+            builder.Services.AddScoped<IDashboardService, DashboardService>();
+
             var app = builder.Build();
 
-            // Configure the HTTP request pipeline.
             if (!app.Environment.IsDevelopment())
             {
                 app.UseExceptionHandler("/Home/Error");
-                // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
                 app.UseHsts();
             }
+
             app.UseStaticFiles();
             app.UseHttpsRedirection();
             app.UseRouting();
-
             app.UseAuthorization();
 
-            app.MapStaticAssets();
             app.MapControllerRoute(
-    name: "areas",
-    pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
+                name: "areas",
+                pattern: "{area:exists}/{controller=Dashboard}/{action=Index}/{id?}");
+
             app.MapControllerRoute(
                 name: "default",
-                pattern: "{area=Admin}/{controller=Dashboard}/{action=Index}/{id?}")
-                .WithStaticAssets();
+                pattern: "{area=Admin}/{controller=Dashboard}/{action=Index}/{id?}");
 
             app.Run();
         }
