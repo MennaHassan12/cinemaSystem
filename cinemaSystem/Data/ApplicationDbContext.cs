@@ -2,6 +2,7 @@
 using cinemaSystem.Models;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
+using cinemaSystem.ViewModel;
 
 namespace cinemaSystem.Data
 {
@@ -40,5 +41,8 @@ namespace cinemaSystem.Data
             //modelBuilder.Entity<IdentityUser>()
             //    .ToTable("",);
         }
+        public DbSet<cinemaSystem.ViewModel.RegisterVM> RegisterVM { get; set; } = default!;
+        public DbSet<cinemaSystem.ViewModel.LoginVM> LoginVM { get; set; } = default!;
+        public DbSet<cinemaSystem.ViewModel.ResendEmailConfirmationVM> ResendEmailConfirmation { get; set; } = default!;
     }
 }
