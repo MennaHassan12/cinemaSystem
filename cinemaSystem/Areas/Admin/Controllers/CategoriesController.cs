@@ -1,10 +1,14 @@
 ﻿using cinemaSystem.Interfaces;
 using cinemaSystem.Models;
+using cinemaSystem.Utilities;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace cinemaSystem.Areas.Admin.Controllers
 {
     [Area("Admin")]
+    [Authorize(Roles = $"{RoleNames.SUPER_ADMIN},{RoleNames.ADMIN},{RoleNames.EMPLOYEE}")]
+
     public class CategoriesController : Controller
     {
         private readonly IRepository<Category> _repo;

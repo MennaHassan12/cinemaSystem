@@ -1,11 +1,11 @@
 ﻿using cinemaSystem.Interfaces;
 using cinemaSystem.Models;
+using cinemaSystem.Services;
 using cinemaSystem.ViewModel;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages;
-using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages;
+//using Microsoft.VisualStudio.Web.CodeGenerators.Mvc.Templates.BlazorIdentity.Pages;
 
 namespace cinemaSystem.Areas.Identity.Controllers
 {
@@ -14,17 +14,19 @@ namespace cinemaSystem.Areas.Identity.Controllers
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly SignInManager<ApplicationUser> _signInManager;
+        private readonly IAccountService _accountService;
 
         private readonly IEmailSender _emailSender;
 
-        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IEmailSender emailSender)
+        private readonly IRepository<ApplicationUserOTP> _applicationUserOTPRepository;
+
+        public AccountController(UserManager<ApplicationUser> userManager, SignInManager<ApplicationUser> signInManager, IEmailSender emailSender, IAccountService accountService, IRepository<ApplicationUserOTP> applicationUserOTPRepository)
         {
             _userManager = userManager;
             _signInManager = signInManager;
-
             _emailSender = emailSender;
-
-
+            _accountService = accountService;
+            _applicationUserOTPRepository = applicationUserOTPRepository;
         }
 
         [HttpGet]
@@ -94,6 +96,7 @@ namespace cinemaSystem.Areas.Identity.Controllers
             return View();
         }
         [HttpPost]
+        [HttpPost]
         public async Task<IActionResult> Register(RegisterVM registerVM)
         {
             if (!ModelState.IsValid)
@@ -102,7 +105,7 @@ namespace cinemaSystem.Areas.Identity.Controllers
             ApplicationUser user = new()
             {
                 FirstName = registerVM.FName,
-                LastName = registerVM.LName,
+                LastName = registerVM.FName,
                 Email = registerVM.Email,
                 UserName = registerVM.UserName,
                 Address = registerVM.Address,
@@ -117,20 +120,15 @@ namespace cinemaSystem.Areas.Identity.Controllers
 
                 return View(registerVM);
             }
-            var token = _userManager.GenerateEmailConfirmationTokenAsync(user);
-            var link = Url.Action(nameof(Confirm), "Account", new { area = "Identity" }
-            , Request.Scheme
-            );
-            await _emailSender.SendEmailAsync(user.Email, "Confirmation Your Account in Cinema App", $"<h1>Confirm Your Account By Clicking <a href='{link}'>Here</a></h1>");
 
+            await _accountService.SendMailAsync(user, Url, Request);
 
 
             TempData["success_notification"] = "Add Account Successfully, check you email";
 
             return RedirectToAction("Login");
-
-
         }
+
 
         public async Task<IActionResult> Confirm(string token, string id)
         {
@@ -167,27 +165,121 @@ namespace cinemaSystem.Areas.Identity.Controllers
             , Request.Scheme
             );
             await _emailSender.SendEmailAsync(user.Email!, "Confirmation Your Account in Cinema App", $"<h1>Confirm Your Account By Clicking <a href='{link}'>Here</a></h1>");
-
+            
+            
 
             TempData["success_notification"] = $"Resend Email Confirmation successfully, please check yoy email";
 
             return RedirectToAction(nameof(Login));
         }
-       
-        //public IActionResult ForgetPassword()
-        //{
-        //    return View();
-        //}
+
+        public IActionResult ForgetPassword()
+        {
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ForgetPassword(ForgetPasswordVM forgetPasswordVM)
+        {
+            if (!ModelState.IsValid)
+                return View(forgetPasswordVM);
+
+            var user = await _userManager.FindByEmailAsync(forgetPasswordVM.EmailORUserName) ?? await _userManager.FindByNameAsync(forgetPasswordVM.EmailORUserName);
+
+            if (user is not null)
+            {
+                await _accountService.SendMailAsync(user, Url, Request, EmailType.ForgetPassword);
+            }
+
+            TempData["success_notification"] = "Send OTP number successfully, Please check your email";
+            TempData["userId"] = user?.Id;
+
+            return RedirectToAction(nameof(ValidateOTP));
+        }
+
         //public IActionResult ResetPassword()
         //{
         //    return View();
         //}
 
-        //public IActionResult ValidOTP()
-        //{
-        //    return View();
-        //}
+        [HttpGet]
+        public IActionResult ValidateOTP()
+        {
+            if (TempData.Peek("userId") is null)
+                return NotFound();
 
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> ValidateOTP(ValidateOTPVM validateOTPVM)
+        {
+            if (!ModelState.IsValid)
+                return View(validateOTPVM);
+
+            if (!TempData.ContainsKey("userId"))
+                return NotFound();
+
+            var userId = TempData.Peek("userId")?.ToString();
+
+            if (userId is null) return NotFound();
+
+            
+            var otp = (await _applicationUserOTPRepository.GetAsync(e => e.ApplicationUserId == userId &&e.OTP == validateOTPVM.OTP &&
+                     !e.IsUsed &&e.ValidTo >= DateTime.Now)).FirstOrDefault();
+
+            if (otp is null)
+            {
+                ModelState.AddModelError(nameof(ValidateOTPVM.OTP), "Invalid OTP");
+                return View(validateOTPVM);
+            }
+
+            otp.IsUsed = true;
+            await _applicationUserOTPRepository.CommitAsync();
+
+            return RedirectToAction(nameof(NewPassword));
+        }
+
+        [HttpGet]
+        public IActionResult NewPassword()
+        {
+            if (TempData.Peek("userId") is null)
+                return NotFound();
+
+            return View();
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> NewPassword(NewPasswordVM newPasswordVM)
+        {
+            if (!ModelState.IsValid)
+                return View(newPasswordVM);
+
+            var userId = TempData.Peek("userId")?.ToString();
+
+            if (userId is null) return NotFound();
+
+            var user = await _userManager.FindByIdAsync(userId);
+
+            if (user is null) return NotFound();
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            await _userManager.ResetPasswordAsync(user, token, newPasswordVM.Password);
+
+            TempData["success_notification"] = "Change Password Successfully";
+            TempData["userId"] = null;
+
+            return RedirectToAction(nameof(Login));
+        }
+        public async Task<IActionResult> Logout()
+        {
+            await _signInManager.SignOutAsync();
+            return RedirectToAction(nameof(Login));
+        }
+        public IActionResult AccessDenied()
+        {
+            return View();
+        }
     }
 
 

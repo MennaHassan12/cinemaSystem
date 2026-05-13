@@ -1,4 +1,6 @@
-﻿namespace cinemaSystem.Interfaces
+﻿using System.Linq.Expressions;
+
+namespace cinemaSystem.Interfaces
 {
     public interface IRepository<T> where T : class
     {
@@ -9,6 +11,11 @@
         Task<int> CommitAsync(CancellationToken ct = default);
 
         Task<IEnumerable<T>> GetAsync(CancellationToken ct = default);
+
+        Task<IEnumerable<T>> GetAsync(
+            Expression<Func<T, bool>> predicate,
+            CancellationToken ct = default);
+
         Task<T?> GetOneAsync(int id, CancellationToken ct = default);
     }
 }

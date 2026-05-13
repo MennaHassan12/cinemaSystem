@@ -19,6 +19,7 @@ namespace cinemaSystem.Data
         public DbSet<Movie> Movies { get; set; }
         public DbSet<MovieActor> MovieActors { get; set; }
         public DbSet<MovieImage> MovieImages { get; set; }
+        public DbSet<ApplicationUserOTP> ApplicationUserOTPs { get; set; }
         //public DbSet<ApplicationUser> ApplicationUsers{get; set;}
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -41,8 +42,7 @@ namespace cinemaSystem.Data
             //modelBuilder.Entity<IdentityUser>()
             //    .ToTable("",);
         }
-        public DbSet<cinemaSystem.ViewModel.RegisterVM> RegisterVM { get; set; } = default!;
-        public DbSet<cinemaSystem.ViewModel.LoginVM> LoginVM { get; set; } = default!;
-        public DbSet<cinemaSystem.ViewModel.ResendEmailConfirmationVM> ResendEmailConfirmation { get; set; } = default!;
+        public DbSet<cinemaSystem.ViewModel.NewPasswordVM> NewPasswordVM { get; set; } = default!;
+        
     }
 }

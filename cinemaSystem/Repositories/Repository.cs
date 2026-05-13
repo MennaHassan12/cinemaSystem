@@ -1,7 +1,7 @@
 ﻿using cinemaSystem.Data;
 using cinemaSystem.Interfaces;
 using Microsoft.EntityFrameworkCore;
-
+using System.Linq.Expressions;
 namespace cinemaSystem.Repositories
 {
     public class Repository<T> : IRepository<T> where T : class
@@ -17,6 +17,11 @@ namespace cinemaSystem.Repositories
 
         public async Task CreateAsync(T entity, CancellationToken ct = default)
             => await _dbSet.AddAsync(entity, ct);
+
+        public async Task<IEnumerable<T>> GetAsync(
+    Expression<Func<T, bool>> predicate,
+    CancellationToken ct = default)
+        => await _dbSet.Where(predicate).ToListAsync(ct);
 
         public void Update(T entity)
             => _dbSet.Update(entity);

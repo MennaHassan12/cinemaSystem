@@ -32,6 +32,12 @@ namespace cinemaSystem
             })
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
+            builder.Services.ConfigureApplicationCookie(options =>
+            {
+                options.LoginPath = $"/Identity/Account/Login";
+                options.LogoutPath = $"/Identity/Account/Logout";
+                options.AccessDeniedPath = $"/Identity/Account/AccessDenied";
+            });
 
             builder.Services.AddTransient<IEmailSender, EmailSender>();
 
@@ -40,8 +46,14 @@ namespace cinemaSystem
             builder.Services.AddScoped<IImageService, ImageService>();
             builder.Services.AddScoped<IMovieService, MovieService>();
             builder.Services.AddScoped<IDashboardService, DashboardService>();
+            builder.Services.AddScoped<ApplicationUserOTP, ApplicationUserOTP>();
+            builder.Services.AddScoped<IDbInitializer,DbInitializer>();
 
             var app = builder.Build();
+
+            var scope = app.Services.CreateScope();
+            var service = scope.ServiceProvider.GetService<IDbInitializer>();
+            service.Initialize();
 
             if (!app.Environment.IsDevelopment())
             {
