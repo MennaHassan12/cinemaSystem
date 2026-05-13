@@ -148,6 +148,13 @@ namespace cinemaSystem.Areas.Identity.Controllers
             return RedirectToAction("Login");
         }
         [HttpGet]
+        public IActionResult ResendEmailConfirmation()
+        {
+            return View();
+        }
+
+        
+        [HttpGet]
         public async Task<IActionResult> ResendEmailConfirmation(ResendEmailConfirmationVM resendEmailConfirmationVM)
         {
             if (!ModelState.IsValid)
@@ -166,28 +173,7 @@ namespace cinemaSystem.Areas.Identity.Controllers
 
             return RedirectToAction(nameof(Login));
         }
-        //[HttpPost]
-        //public IActionResult ResendEmailConfirmation()
-        //{
-        //    if (!ModelState.IsValid)
-        //        return View(resendEmailConfirmationVM);
-
-        //    var user = await _userManager.FindByEmailAsync(resendEmailConfirmationVM.EmailORUserName) ?? await _userManager.FindByNameAsync(resendEmailConfirmationVM.EmailORUserName);
-
-        //    if(user is not null && !user.EmailConfirmed)
-        //        await _accountService.SendMailAsync(user, Url, Request, EmailType.ResendConfirmation);
-
-        //    TempData["success_notification"] = $"Resend Email Confirmation successfully, please check yoy email";
-
-        //    return RedirectToAction(nameof(Login));
-        //}
-
-        //public IActionResult ConfirmAccount()
-        //{
-        //    return View();
-        //}
-
-
+       
         //public IActionResult ForgetPassword()
         //{
         //    return View();
