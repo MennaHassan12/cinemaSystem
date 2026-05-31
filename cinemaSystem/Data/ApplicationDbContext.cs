@@ -21,6 +21,10 @@ namespace cinemaSystem.Data
         public DbSet<MovieImage> MovieImages { get; set; }
         public DbSet<ApplicationUserOTP> ApplicationUserOTPs { get; set; }
         //public DbSet<ApplicationUser> ApplicationUsers{get; set;}
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<FavoriteItem> FavoriteItems { get; set; }
+        public DbSet<ProductPromotion> ProductPromotions { get; set; }
+        public DbSet<PromotionUserUsage> PromotionUserUsages { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

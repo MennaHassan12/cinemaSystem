@@ -14,8 +14,10 @@ namespace cinemaSystem.Interfaces
 
         Task<IEnumerable<T>> GetAsync(
             Expression<Func<T, bool>> predicate,
-            CancellationToken ct = default);
+            CancellationToken ct = default,
+            object includes = null);
 
         Task<T?> GetOneAsync(int id, CancellationToken ct = default);
+        Task GetOneAsync(Func<object, bool> value);
     }
 }

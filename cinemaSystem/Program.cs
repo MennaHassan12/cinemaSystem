@@ -46,9 +46,14 @@ namespace cinemaSystem
             builder.Services.AddScoped<IImageService, ImageService>();
             builder.Services.AddScoped<IMovieService, MovieService>();
             builder.Services.AddScoped<IDashboardService, DashboardService>();
+            builder.Services.AddScoped<IRepository < Cart>, Repository<Cart>>();
+            builder.Services.AddScoped<IRepository < Cart>, Repository<Cart>>();
+            builder.Services.AddScoped<IRepository < FavoriteItem>, Repository<FavoriteItem>>();
+            builder.Services.AddScoped<IRepository < ProductPromotion>, Repository<ProductPromotion>>();
+            builder.Services.AddScoped<IRepository < PromotionUserUsage>, Repository<PromotionUserUsage>>();
             builder.Services.AddScoped<ApplicationUserOTP, ApplicationUserOTP>();
             builder.Services.AddScoped<IDbInitializer,DbInitializer>();
-
+            builder.Services.AddScoped<IAccountService, AccountService>();
             var app = builder.Build();
 
             var scope = app.Services.CreateScope();
