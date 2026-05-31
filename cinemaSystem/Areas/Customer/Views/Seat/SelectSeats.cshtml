@@ -1,0 +1,45 @@
+﻿@{
+    ViewData["Title"] = "Select Seats";
+}
+
+<h2>Select Your Seat</h2>
+
+<div class="seat-container">
+    <button class="seat">A1</button>
+    <button class="seat booked">A2</button>
+    <button class="seat">A3</button>
+</div>
+
+<style>
+    .seat {
+        width: 50px;
+        height: 50px;
+        background: green;
+        color: white;
+        margin: 5px;
+    }
+
+    .booked {
+        background: red;
+    }
+
+    .selected {
+        background: blue;
+    }
+</style>
+
+<script>
+    document.querySelectorAll('.seat:not(.booked)')
+    .forEach(seat => {
+
+        seat.addEventListener('click', function () {
+
+            document.querySelectorAll('.seat')
+            .forEach(x => x.classList.remove('selected'));
+
+            this.classList.add('selected');
+
+        });
+
+    });
+</script>

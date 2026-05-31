@@ -9,6 +9,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.UI.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
+using Stripe;
 
 namespace cinemaSystem
 {
@@ -51,14 +52,20 @@ namespace cinemaSystem
             builder.Services.AddScoped<IRepository < FavoriteItem>, Repository<FavoriteItem>>();
             builder.Services.AddScoped<IRepository < ProductPromotion>, Repository<ProductPromotion>>();
             builder.Services.AddScoped<IRepository < PromotionUserUsage>, Repository<PromotionUserUsage>>();
+            builder.Services.AddScoped<IRepository < Order>, Repository<Order>>();
+            builder.Services.AddScoped<IRepository < OrderItem>, Repository<OrderItem>>();
+            builder.Services.AddScoped<IRepository < Models.Review>, Repository<Models.Review>>();
             builder.Services.AddScoped<ApplicationUserOTP, ApplicationUserOTP>();
             builder.Services.AddScoped<IDbInitializer,DbInitializer>();
-            builder.Services.AddScoped<IAccountService, AccountService>();
+            builder.Services.AddScoped<IAccountService, Services.AccountService>();
             var app = builder.Build();
 
             var scope = app.Services.CreateScope();
             var service = scope.ServiceProvider.GetService<IDbInitializer>();
             service.Initialize();
+
+            builder.Services.Configure<StripeSettings>(builder.Configuration.GetSection("Strip"));
+            StripeConfiguration.ApiKey = builder.Configuration("Stripe:SecretKey");
 
             if (!app.Environment.IsDevelopment())
             {

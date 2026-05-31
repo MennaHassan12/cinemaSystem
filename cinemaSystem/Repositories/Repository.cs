@@ -37,5 +37,15 @@ namespace cinemaSystem.Repositories
 
         public async Task<T?> GetOneAsync(int id, CancellationToken ct = default)
             => await _dbSet.FindAsync(new object[] { id }, ct);
+
+        public Task<IEnumerable<T>> GetAsync(Expression<Func<T, bool>> predicate, CancellationToken ct = default, object includes = null)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task GetOneAsync(Func<object, bool> value)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

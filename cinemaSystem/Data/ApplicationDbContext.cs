@@ -25,6 +25,9 @@ namespace cinemaSystem.Data
         public DbSet<FavoriteItem> FavoriteItems { get; set; }
         public DbSet<ProductPromotion> ProductPromotions { get; set; }
         public DbSet<PromotionUserUsage> PromotionUserUsages { get; set; }
+        public DbSet<Order> Orders { get; set; }
+        public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Review> Reviews { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {

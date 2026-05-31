@@ -4,6 +4,8 @@ using cinemaSystem.Models;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
+using Stripe.BillingPortal;
+using Stripe.Checkout;
 
 namespace cinemaSystem.Areas.Customer.Controllers
 {
@@ -198,14 +200,40 @@ namespace cinemaSystem.Areas.Customer.Controllers
             if (orderInDb == null)
             {
                 order.ApplicationUserId = user.Id;
-                order.TotalPrice = (decimal)userCart.Sum(e => e.ProductPrice * e.Quantity);
+                order.TotalPrice = (decimal)userCart.Sum(e => e.MoviePrice);
 
                 await _orderRepository.CreateAsync(order);
                 await _orderRepository.CommitAsync();
             }
 
-          
-            var service = new SessionService();
+            var options = new Stripe.Checkout.SessionCreateOptions
+            {
+                PaymentMethodTypes = new List<string> { "card" },
+                LineItems = new List<SessionLineItemOptions>(),
+                Mode = "payment",
+                SuccessUrl = $"{Request.Scheme}://{Request.Host}/customer/checkout/success?orderId={orderInDb?.Id ?? order.Id}",
+                CancelUrl = $"{Request.Scheme}://{Request.Host}/customer/checkout/cancel",
+            };
+
+            foreach (var item in userCart)
+            {
+                options.LineItems.Add(new SessionLineItemOptions
+                {
+                    PriceData = new SessionLineItemPriceDataOptions
+                    {
+                        Currency = "egp",
+                        ProductData = new SessionLineItemPriceDataProductDataOptions
+                        {
+                            Name = item.Movie.Name,
+                            
+                        },
+                        UnitAmount = (long)item.MoviePrice * 100,
+                    },
+                    
+                });
+            }
+
+            var service = new Stripe.Checkout.SessionService();
             var session = service.Create(options);
             order.SessionId = session.Id;
             await _orderRepository.CommitAsync();
